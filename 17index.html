@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Space Dodge</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #020617;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            border: 2px solid #1e293b;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            cursor: none;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #38bdf8;
+            pointer-events: none;
+        }
+        #gameOver {
+            position: absolute;
+            display: none;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid #38bdf8;
+        }
+        button {
+            padding: 10px 20px;
+            background: #38bdf8;
+            border: none;
+            border-radius: 8px;
+            color: #020617;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="score">Ball: 0</div>
+    
+    <div id="gameOver">
+        <h1>O'yin Tugadi!</h1>
+        <p id="finalScore"></p>
+        <button onclick="resetGame()">Qayta boshlash</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const gameOverScreen = document.getElementById('gameOver');
+    const finalScoreElement = document.getElementById('finalScore');
+
+    canvas.width = 600;
+    canvas.height = 800;
+
+    let score = 0;
+    let gameActive = true;
+    let frameCount = 0;
+
+    const player = {
+        x: canvas.width / 2,
+        y: canvas.height - 50,
+        size: 20,
+        color: '#38bdf8'
+    };
+
+    const obstacles = [];
+
+    // Sichqoncha harakati
+    window.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        player.x = e.clientX - rect.left;
+        // Chegaradan chiqib ketmaslik
+        if (player.x < 0) player.x = 0;
+        if (player.x > canvas.width) player.x = canvas.width;
+    });
+
+    function createObstacle() {
+        const size = Math.random() * 40 + 20;
+        obstacles.push({
+            x: Math.random() * (canvas.width - size),
+            y: -size,
+            size: size,
+            speed: Math.random() * 3 + 2 + (score / 10) // Ball oshgan sari tezlashadi
+        });
+    }
+
+    function drawPlayer() {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = player.color;
+        ctx.fillStyle = player.color;
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y - player.size);
+        ctx.lineTo(player.x - player.size, player.y + player.size);
+        ctx.lineTo(player.x + player.size, player.y + player.size);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function update() {
+        if (!gameActive) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        frameCount++;
+
+        if (frameCount % 30 === 0) createObstacle();
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            const obs = obstacles[i];
+            obs.y += obs.speed;
+
+            // Chizish
+            ctx.fillStyle = '#f43f5e';
+            ctx.fillRect(obs.x, obs.y, obs.size, obs.size);
+
+            // To'qnashuvni aniqlash
+            if (
+                player.x > obs.x - player.size &&
+                player.x < obs.x + obs.size + player.size &&
+                player.y > obs.y - player.size &&
+                player.y < obs.y + obs.size
+            ) {
+                endGame();
+            }
+
+            // O'tib ketgan to'siqlarni o'chirish
+            if (obs.y > canvas.height) {
+                obstacles.splice(i, 1);
+                score++;
+                scoreElement.innerText = `Ball: ${score}`;
+            }
+        }
+
+        drawPlayer();
+        requestAnimationFrame(update);
+    }
+
+    function endGame() {
+        gameActive = false;
+        gameOverScreen.style.display = 'block';
+        finalScoreElement.innerText = `Siz yig'gan ball: ${score}`;
+    }
+
+    function resetGame() {
+        score = 0;
+        obstacles.length = 0;
+        gameActive = true;
+        frameCount = 0;
+        scoreElement.innerText = `Ball: 0`;
+        gameOverScreen.style.display = 'none';
+        update();
+    }
+
+    update();
+</script>
+</body>
+</html>
